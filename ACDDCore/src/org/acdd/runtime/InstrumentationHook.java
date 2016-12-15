@@ -40,7 +40,6 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.ActivityInfo;
 import android.content.pm.ResolveInfo;
-import android.content.res.AssetManager;
 import android.content.res.Resources;
 import android.os.Build;
 import android.os.Bundle;
@@ -500,7 +499,7 @@ public class InstrumentationHook extends Instrumentation {
     private List<String> getAssetPathFromResources(Resources resources) {
         try {
             return DelegateResources
-                    .getOriginAssetsPath((AssetManager) ACDDHacks.Resources_mAssets.get(resources));
+                    .getOriginAssetsPath(resources.getAssets());
         } catch (Exception e) {
             log.debug("DelegateResource" + e.getCause());
             return null;

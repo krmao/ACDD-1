@@ -33,11 +33,13 @@ import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.ServiceInfo;
 import android.content.res.Resources;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Handler.Callback;
 import android.os.Looper;
 import android.os.Message;
 import android.os.Process;
+import android.util.ArrayMap;
 
 import org.acdd.framework.ACDDConfig;
 import org.acdd.framework.BundleImpl;
@@ -56,7 +58,11 @@ import org.osgi.framework.BundleException;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
+
+import static org.acdd.hack.ACDDHacks.ActivityThread;
 
 /****
  * Hack Android ActivityThread
@@ -64,10 +70,42 @@ import java.util.Map;
 public class AndroidHack {
     private static Object _mLoadedApk;
     private static Object _sActivityThread;
+    static Field mActiveResources;
+    static Class ResourcesManager;
+    static Method getInstance;
+    static Field mAssets;
     public static final int LAUNCH_ACTIVITY         = 100;
     public static final int RECEIVER                = 113;
     public static final int CREATE_SERVICE          = 114;
     static Logger logger= LoggerFactory.getInstance("AndroidHack");
+    static {
+        mActiveResources = null;//mActiveResources
+        ResourcesManager = null;
+        getInstance = null;
+        mAssets = null;//mAssets
+        try {
+
+            if (Build.VERSION.SDK_INT <= 18) {
+              Hack.HackedField<Object, Object> Class_getDeclaredField1=ACDDHacks.ActivityThread.field("mActiveResources");
+            mActiveResources = Class_getDeclaredField1.getField();
+                mAssets=  ACDDHacks.Resources.field("mAssets").getField();
+
+            } else if (Build.VERSION.SDK_INT < 24) {
+                mActiveResources=  ACDDHacks.ResourcesManager.field("mActiveResources").getField();
+                getInstance=ACDDHacks.ResourcesManager.staticMethod("getInstance",new Class[0]).getMethod();
+                mAssets=  ACDDHacks.Resources.field("mAssets").getField();
+                ResourcesManager=ACDDHacks.ResourcesManager.mClass;
+
+            } else {
+                ResourcesManager=ACDDHacks.ResourcesManager.mClass;
+                mActiveResources=  ACDDHacks.ResourcesManager.field("mResourceReferences").getField();
+                getInstance=ACDDHacks.ResourcesManager.staticMethod("getInstance",new Class[0]).getMethod();
+//
+            }
+        } catch (Throwable th) {
+        }
+    }
+
 
     static   void  checkActivityOnSubProcess(Object object){
         Field declaredField = null;
@@ -235,7 +273,7 @@ public class AndroidHack {
         public void run() {
             try {
                 AndroidHack._sActivityThread = ACDDHacks.ActivityThread_currentActivityThread
-                        .invoke(ACDDHacks.ActivityThread.getmClass());
+                        .invoke(ActivityThread.getmClass());
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -277,7 +315,7 @@ public class AndroidHack {
                     "Failed to get ActivityThread.sCurrentActivityThread");
         }
         try {
-            Handler handler = (Handler) ACDDHacks.ActivityThread
+            Handler handler = (Handler) ActivityThread
                     .field("mH")
                     .ofType(Hack.into("android.app.ActivityThread$H")
                             .getmClass()).get(activityThread);
@@ -348,7 +386,7 @@ public class AndroidHack {
             Class cls = Class.forName("android.content.res.CompatibilityInfo");
             Object invoke = declaredMethod.invoke(application.getResources()
             );
-            Method declaredMethod2 = ACDDHacks.ActivityThread.getmClass()
+            Method declaredMethod2 = ActivityThread.getmClass()
                     .getDeclaredMethod("getPackageInfoNoCheck",
                             ApplicationInfo.class, cls);
             declaredMethod2.setAccessible(true);
@@ -382,6 +420,18 @@ public class AndroidHack {
             throw new Exception("Failed to get ActivityThread.mLoadedApk");
         }
         ACDDHacks.LoadedApk_mClassLoader.set(loadedApk, classLoader);
+    }
+    private static Object _1invoke(Method method, Object obj, Object[] objArr) {
+
+        Throwable th = null;
+        Object obj2 = null;
+
+            try {
+                obj2 = method.invoke(obj, objArr);
+            } catch (Throwable th2) {
+            }
+        return  obj2;
+
     }
 
     public static void injectApplication(String packageName, Application application)
@@ -433,7 +483,40 @@ public class AndroidHack {
         ACDDHacks.ContextImpl_mResources.set(application.getBaseContext(),
                 resources);
         ACDDHacks.ContextImpl_mTheme.set(application.getBaseContext(), null);
+
+        try {
+            Collection<WeakReference> values;
+            if (Build.VERSION.SDK_INT <= 18) {
+                values = ((HashMap) mActiveResources.get(activityThread)).values();
+            } else if (Build.VERSION.SDK_INT < 24) {
+                values = ((ArrayMap) mActiveResources.get(_1invoke(getInstance, ResourcesManager, new Object[0]))).values();
+            } else {
+                values = (Collection) mActiveResources.get(_1invoke(getInstance, ResourcesManager, new Object[0]));
+            }
+            for (WeakReference weakReference : values) {
+                Resources resources2 = (Resources) weakReference.get();
+                if (resources2 != null) {
+
+                    if (Build.VERSION.SDK_INT >= 24) {
+                        Field mResourcesImpl= ACDDHacks.Resources.field("mResourcesImpl").getField();
+
+                        activityThread = mResourcesImpl.get(resources2);
+
+                        mAssets= ACDDHacks.ResourcesImpl_mAssets.getField();
+                        mAssets.set(activityThread,resources2.getAssets());
+                    } else {
+                        mAssets.set(resources2,resources2.getAssets());
+
+                    }
+                    resources2.updateConfiguration(resources.getConfiguration(), resources.getDisplayMetrics());
+                }
+            }
+        } catch (Throwable th) {
+            th.printStackTrace();
+        }
     }
+
+
 
     /***
      * get Instrumentation,should be  hacked Instrumentation

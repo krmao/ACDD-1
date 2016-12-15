@@ -65,6 +65,7 @@ public class ACDDHacks extends HackDeclaration implements
      * manager requests.
      */
     public static HackedClass<Object> ActivityThread;
+    public static HackedClass<Object> ResourcesManager;
     /** Reference to singleton  ActivityThread*/
     public static HackedMethod ActivityThread_currentActivityThread;
     //public static HackedMethod ActivityThread_currentProcessName;
@@ -135,7 +136,11 @@ public class ACDDHacks extends HackDeclaration implements
     public static HackedField<Object, String> LoadedApk_mResDir;
     public static HackedField<Object, Resources> LoadedApk_mResources;
     public static HackedClass<Resources> Resources;
-    public static HackedField<Resources, Object> Resources_mAssets;
+    public static HackedClass<Object>  ResourcesImpl;
+
+    //public static HackedField<Resources, Object> Resources_mAssets;
+    public static HackedField<Object, Object>ResourcesImpl_mAssets;
+   // android.content.res
     public static HackedClass<Service> Service;
     //support stub mode
     public static HackedClass<Object> PackageParser;
@@ -220,6 +225,12 @@ public class ACDDHacks extends HackDeclaration implements
             LoadedApk = Hack.into("android.app.LoadedApk");
         }
         ActivityThread = Hack.into("android.app.ActivityThread");
+        if (VERSION.SDK_INT>24){
+            ResourcesImpl     = Hack.into("android.content.res.ResourcesImpl");
+        }
+        if (VERSION.SDK_INT>18){
+            ResourcesManager=Hack.into("android.app.ResourcesManager");
+        }
         Resources = Hack.into(Resources.class);
         Application = Hack.into(Application.class);
         AssetManager = Hack.into(AssetManager.class);
@@ -287,7 +298,7 @@ public class ACDDHacks extends HackDeclaration implements
         }
         ContextWrapper_mBase = ContextWrapper.field("mBase").ofType(
                 Context.class);
-        Resources_mAssets = Resources.field("mAssets");
+        ResourcesImpl_mAssets = ResourcesImpl.field("mAssets");
         PackageParser$Activity_intents = PackageParser$Component.field("intents").ofGenericType(ArrayList.class);
         PackageParser$Package_activities = PackageParser$Package.field("activities").ofGenericType(ArrayList.class);
         PackageParser$Package_services = PackageParser$Package.field("services").ofGenericType(ArrayList.class);

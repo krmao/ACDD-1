@@ -71,7 +71,7 @@ android {
         }
     }
     compileSdkVersion 23
-    buildToolsVersion "23.0.2"
+    buildToolsVersion "24.0.2"
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_6
         targetCompatibility JavaVersion.VERSION_1_6
@@ -122,5 +122,5 @@ task acddWrapBundle << {
         args "$projectDir/libs/armeabi".toString(), "$projectDir/assets/bundle-info.json".toString(),"$projectDir/.bundleCache"
     }
 }
-assembleDebug.dependsOn(acddWrapBundle)
-assembleRelease.dependsOn(acddWrapBundle)
+//assembleDebug.dependsOn(acddWrapBundle)
+//assembleRelease.dependsOn(acddWrapBundle)
