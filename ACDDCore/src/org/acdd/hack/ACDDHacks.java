@@ -298,7 +298,9 @@ public class ACDDHacks extends HackDeclaration implements
         }
         ContextWrapper_mBase = ContextWrapper.field("mBase").ofType(
                 Context.class);
-        ResourcesImpl_mAssets = ResourcesImpl.field("mAssets");
+        if (VERSION.SDK_INT>24){
+            ResourcesImpl_mAssets = ResourcesImpl.field("mAssets");
+        }
         PackageParser$Activity_intents = PackageParser$Component.field("intents").ofGenericType(ArrayList.class);
         PackageParser$Package_activities = PackageParser$Package.field("activities").ofGenericType(ArrayList.class);
         PackageParser$Package_services = PackageParser$Package.field("services").ofGenericType(ArrayList.class);
