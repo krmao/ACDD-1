@@ -74,10 +74,11 @@ public class AndroidHack {
     static Class ResourcesManager;
     static Method getInstance;
     static Field mAssets;
-    public static final int LAUNCH_ACTIVITY         = 100;
-    public static final int RECEIVER                = 113;
-    public static final int CREATE_SERVICE          = 114;
-    static Logger logger= LoggerFactory.getInstance("AndroidHack");
+    public static final int LAUNCH_ACTIVITY = 100;
+    public static final int RECEIVER = 113;
+    public static final int CREATE_SERVICE = 114;
+    static Logger logger = LoggerFactory.getInstance("AndroidHack");
+
     static {
         mActiveResources = null;//mActiveResources
         ResourcesManager = null;
@@ -86,28 +87,29 @@ public class AndroidHack {
         try {
 
             if (Build.VERSION.SDK_INT <= 18) {
-              Hack.HackedField<Object, Object> Class_getDeclaredField1=ACDDHacks.ActivityThread.field("mActiveResources");
-            mActiveResources = Class_getDeclaredField1.getField();
-                mAssets=  ACDDHacks.Resources.field("mAssets").getField();
+                Hack.HackedField<Object, Object> Class_getDeclaredField1 = ACDDHacks.ActivityThread.field("mActiveResources");
+                mActiveResources = Class_getDeclaredField1.getField();
+                mAssets = ACDDHacks.Resources.field("mAssets").getField();
 
             } else if (Build.VERSION.SDK_INT < 24) {
-                mActiveResources=  ACDDHacks.ResourcesManager.field("mActiveResources").getField();
-                getInstance=ACDDHacks.ResourcesManager.staticMethod("getInstance",new Class[0]).getMethod();
-                mAssets=  ACDDHacks.Resources.field("mAssets").getField();
-                ResourcesManager=ACDDHacks.ResourcesManager.mClass;
+                mActiveResources = ACDDHacks.ResourcesManager.field("mActiveResources").getField();
+                getInstance = ACDDHacks.ResourcesManager.staticMethod("getInstance", new Class[0]).getMethod();
+                mAssets = ACDDHacks.Resources.field("mAssets").getField();
+                ResourcesManager = ACDDHacks.ResourcesManager.mClass;
 
             } else {
-                ResourcesManager=ACDDHacks.ResourcesManager.mClass;
-                mActiveResources=  ACDDHacks.ResourcesManager.field("mResourceReferences").getField();
-                getInstance=ACDDHacks.ResourcesManager.staticMethod("getInstance",new Class[0]).getMethod();
-//
+                ResourcesManager = ACDDHacks.ResourcesManager.mClass;
+                mActiveResources = ACDDHacks.ResourcesManager.field("mResourceReferences").getField();
+                getInstance = ACDDHacks.ResourcesManager.staticMethod("getInstance", new Class[0]).getMethod();
+                mAssets = ACDDHacks.ResourcesImpl_mAssets.getField();
+
             }
         } catch (Throwable th) {
         }
     }
 
 
-    static   void  checkActivityOnSubProcess(Object object){
+    static void checkActivityOnSubProcess(Object object) {
         Field declaredField = null;
         try {
             Class cls = Class.forName("android.app.ActivityThread$ActivityClientRecord");
@@ -119,7 +121,7 @@ public class AndroidHack {
 
             String mComponentName = intent.getComponent().getClassName();
             ClassLoadFromBundle.checkInstallBundleIfNeed(mComponentName);
-            String    packageName = DelegateComponent.locateComponent(mComponentName);
+            String packageName = DelegateComponent.locateComponent(mComponentName);
             if (packageName != null) {
                 BundleImpl bundleImpl = (BundleImpl) Framework.getBundle(packageName);
                 if (bundleImpl != null) {
@@ -140,16 +142,17 @@ public class AndroidHack {
         }
 
     }
-     static void checkReceiverOnSubProcess(Object obj) {
+
+    static void checkReceiverOnSubProcess(Object obj) {
         logger.debug("checkReceiverOnSubProcess");
         try {
             Class cls = Class.forName("android.app.ActivityThread$ReceiverData");
             Field declaredField = cls.getDeclaredField("intent");
             declaredField.setAccessible(true);
             Intent intent = (Intent) declaredField.get(obj);
-          String mComponentName=  intent.getComponent().getClassName();
+            String mComponentName = intent.getComponent().getClassName();
             ClassLoadFromBundle.checkInstallBundleIfNeed(mComponentName);
-            String    packageName = DelegateComponent.locateComponent(mComponentName);
+            String packageName = DelegateComponent.locateComponent(mComponentName);
             if (packageName != null) {
                 BundleImpl bundleImpl = (BundleImpl) Framework.getBundle(packageName);
                 if (bundleImpl != null) {
@@ -170,13 +173,13 @@ public class AndroidHack {
         }
     }
 
-    static   void  checkServiceOnSubProcess(Object object){
+    static void checkServiceOnSubProcess(Object object) {
         Field infoField = null;
-        ServiceInfo info=null;
+        ServiceInfo info = null;
         try {
             infoField = object.getClass().getDeclaredField("info");
             infoField.setAccessible(true);
-             info = (ServiceInfo) infoField.get(object);
+            info = (ServiceInfo) infoField.get(object);
         } catch (NoSuchFieldException e) {
             e.printStackTrace();
         } catch (IllegalAccessException e) {
@@ -184,7 +187,7 @@ public class AndroidHack {
         }
         String mComponentName = info.name;
         ClassLoadFromBundle.checkInstallBundleIfNeed(mComponentName);
-        String    packageName = DelegateComponent.locateComponent(mComponentName);
+        String packageName = DelegateComponent.locateComponent(mComponentName);
         if (packageName != null) {
             BundleImpl bundleImpl = (BundleImpl) Framework.getBundle(packageName);
             if (bundleImpl != null) {
@@ -196,6 +199,7 @@ public class AndroidHack {
             }
         }
     }
+
     static final class HandlerHack implements Callback {
         final Object activityThread;
         final Handler handler;
@@ -209,12 +213,12 @@ public class AndroidHack {
         public boolean handleMessage(Message message) {
             try {
                 AndroidHack.ensureLoadedApk();
-                if (RuntimeVariables.inSubProcess&& ACDDConfig.subProcessEnable){
-                    if (message.what == CREATE_SERVICE ) {
+                if (RuntimeVariables.inSubProcess && ACDDConfig.subProcessEnable) {
+                    if (message.what == CREATE_SERVICE) {
                         checkServiceOnSubProcess(message.obj);
-                    } else if (message.what == LAUNCH_ACTIVITY ) {
+                    } else if (message.what == LAUNCH_ACTIVITY) {
                         checkActivityOnSubProcess(message.obj);
-                    }else if (message.what==RECEIVER){
+                    } else if (message.what == RECEIVER) {
                         checkReceiverOnSubProcess(message.obj);
                     }
                 }
@@ -242,14 +246,14 @@ public class AndroidHack {
                                 RuntimeVariables.androidApplication
                                         .getPackageName());
                         if (loadedApk == null) {
-                            logger.error("",new RuntimeException("loadedapk is null"));
+                            logger.error("", new RuntimeException("loadedapk is null"));
                         } else {
                             ClassLoader classLoader = ACDDHacks.LoadedApk_mClassLoader.get(loadedApk);
                             if (classLoader instanceof DelegateClassLoader) {
-                                logger.error("",new RuntimeException("From ACDD:classNotFound ---", th));
+                                logger.error("", new RuntimeException("From ACDD:classNotFound ---", th));
 
                             } else {
-                                logger.error("",new RuntimeException("wrong classloader in loadedapk---" + classLoader.getClass().getName(), th));
+                                logger.error("", new RuntimeException("wrong classloader in loadedapk---" + classLoader.getClass().getName(), th));
 
                             }
                         }
@@ -398,11 +402,13 @@ public class AndroidHack {
             throw new RuntimeException(e);
         }
     }
-/**
- * inject  system  classloader,we need handle  load class from  bundle
- * @param packageName  package name
- * @param classLoader    delegate  classloader
- * ***/
+
+    /**
+     * inject  system  classloader,we need handle  load class from  bundle
+     *
+     * @param packageName package name
+     * @param classLoader delegate  classloader
+     ***/
     public static void injectClassLoader(String packageName, ClassLoader classLoader)
             throws Exception {
         Object activityThread = getActivityThread();
@@ -421,16 +427,17 @@ public class AndroidHack {
         }
         ACDDHacks.LoadedApk_mClassLoader.set(loadedApk, classLoader);
     }
+
     private static Object _1invoke(Method method, Object obj, Object[] objArr) {
 
         Throwable th = null;
         Object obj2 = null;
 
-            try {
-                obj2 = method.invoke(obj, objArr);
-            } catch (Throwable th2) {
-            }
-        return  obj2;
+        try {
+            obj2 = method.invoke(obj, objArr);
+        } catch (Throwable th2) {
+        }
+        return obj2;
 
     }
 
@@ -498,14 +505,10 @@ public class AndroidHack {
                 if (resources2 != null) {
 
                     if (Build.VERSION.SDK_INT >= 24) {
-                        Field mResourcesImpl= ACDDHacks.Resources.field("mResourcesImpl").getField();
-
-                        activityThread = mResourcesImpl.get(resources2);
-
-                        mAssets= ACDDHacks.ResourcesImpl_mAssets.getField();
-                        mAssets.set(activityThread,resources2.getAssets());
+                        Object assetManager = ACDDHacks.ResourcesImpl_mAssets.getField().get(resources2);
+                        mAssets.set(assetManager, resources2.getAssets());
                     } else {
-                        mAssets.set(resources2,resources2.getAssets());
+                        mAssets.set(resources2, resources2.getAssets());
 
                     }
                     resources2.updateConfiguration(resources.getConfiguration(), resources.getDisplayMetrics());
@@ -515,7 +518,6 @@ public class AndroidHack {
             th.printStackTrace();
         }
     }
-
 
 
     /***
